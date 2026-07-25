@@ -4,7 +4,7 @@ Upload a CSV/Excel file, describe a pattern in plain English ("find email addres
 and this app finds and replaces it across every row — asynchronously, and scaled to
 millions of rows via PySpark.
 
-**Demo video:** _[add your Loom/YouTube link here before submitting]_
+**Demo video:** (https://youtu.be/pkUTT8xybaQ)
 **Live URL:** _[add your deployed URL here before submitting]_
 
 ---
