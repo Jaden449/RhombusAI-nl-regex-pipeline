@@ -39,17 +39,21 @@ _spark_session: SparkSession | None = None
 
 
 def get_spark() -> SparkSession:
-    global _spark_session
-    if _spark_session is None:
-        _spark_session = (
-            SparkSession.builder.appName("rhombus-regex-engine")
-            .master(settings.SPARK_MASTER)
-            .config("spark.sql.shuffle.partitions", settings.SPARK_SHUFFLE_PARTITIONS)
-            .config("spark.driver.memory", os.getenv("SPARK_DRIVER_MEMORY", "2g"))
-            .config("spark.sql.execution.arrow.pyspark.enabled", "true")
-            .getOrCreate()
-        )
-    return _spark_session
+       global _spark_session
+       if _spark_session is None:
+           os.environ.setdefault("SPARK_LOCAL_IP", "127.0.0.1")
+
+           _spark_session = (
+               SparkSession.builder.appName("rhombus-regex-engine")
+               .master(settings.SPARK_MASTER)
+               .config("spark.sql.shuffle.partitions", settings.SPARK_SHUFFLE_PARTITIONS)
+               .config("spark.driver.memory", os.getenv("SPARK_DRIVER_MEMORY", "2g"))
+               .config("spark.sql.execution.arrow.pyspark.enabled", "true")
+               .config("spark.driver.bindAddress", "127.0.0.1")
+               .config("spark.driver.host", "127.0.0.1")
+               .getOrCreate()
+           )
+       return _spark_session
 
 
 @dataclass
