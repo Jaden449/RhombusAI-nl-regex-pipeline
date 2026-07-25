@@ -6,6 +6,71 @@ millions of rows via PySpark.
 
 **Demo video:** (https://youtu.be/pkUTT8xybaQ)
 **Live URL:** (https://frontend-production-4d42.up.railway.app)
+Note: the live deployment's availability is time-limited — see [Live Deployment Journey & Availability](#live-deployment-journey--availability) below before relying on it.
+
+## Live Deployment Journey & Availability
+
+Getting this running publicly (not just via `docker compose up` on my own machine)
+surfaced a few genuine, worth-documenting differences between a local Docker
+environment and a real cloud host. I'm recording the actual sequence here rather
+than only showing the end result, since the process itself demonstrates real
+debugging against real infrastructure constraints, not just code that happened to
+work once.
+
+**1. Local Docker (proof of correctness and scale).**
+The full stack — Django, Celery, Redis, Postgres, PySpark, React — was built and
+tested end-to-end locally first. This is the version shown in the demo video,
+and it was verified against a synthetic **3,000,000-row** CSV, processing and
+correctly redacting every matching row. This established that the architecture
+itself is correct and scales as designed, independent of any hosting platform.
+
+**2. First cloud deployment (Railway, free trial).**
+Deploying the same codebase to Railway (backend, Celery worker, Postgres, Redis,
+and frontend as separate services) surfaced three real, hosting-specific issues
+that don't show up locally, each fixed and documented in the codebase/commit
+history:
+- A base Docker image version bump meant `openjdk-17` was no longer available in
+  the image's package repo (fixed by moving to `openjdk-21`).
+- Two separate Railway services (the API and the Celery worker) do not share a
+  filesystem, unlike Docker Compose's shared volumes — so a file uploaded via the
+  API wasn't visible to the worker. Railway explicitly doesn't support shared
+  volumes across services, so the fix was to run the API and worker as one
+  combined process inside a single service instead of two, so they share the
+  same container filesystem.
+- PySpark's driver tries to bind to the container's hostname on startup, which
+  doesn't resolve the way Spark expects inside Railway's network sandbox,
+  causing an immediate connection-refused failure. Fixed by explicitly forcing
+  Spark to bind to `127.0.0.1` (`spark.driver.bindAddress` / `spark.driver.host`).
+
+**3. Hitting a real memory ceiling.**
+On Railway's free trial tier, each service is capped at a small amount of RAM
+(roughly 512MB). Small files (a handful of rows) processed successfully once the
+above issues were fixed, confirming the deployment itself was healthy — but
+processing the 3,000,000-row file caused Spark to crash from insufficient
+memory, since PySpark reserves a JVM heap on startup and 512MB isn't enough
+headroom to run Django, Celery, Postgres/Redis connections, and a Spark JVM in
+the same small container. This is a genuine resource ceiling of the free tier,
+not a code defect — the same code runs the same 3,000,000-row file successfully
+both locally and, as below, on a higher-memory tier.
+
+**4. Upgrading to Railway's Hobby plan.**
+To remove that ceiling, I upgraded to Railway's Hobby plan (~$5/month, which
+raises the per-service limit to up to 8GB RAM). After increasing
+`SPARK_DRIVER_MEMORY` accordingly, the live deployment successfully processed
+the full 3,000,000-row file end-to-end — matching and redacting all 3,000,000
+rows in the same run shown in the screenshots/testing for this submission.
+
+**Availability note for reviewers:** the live URL above is hosted on a paid but
+low-cost, personally-funded plan rather than dedicated production
+infrastructure, and the current billing period is time-limited (~1 month from
+submission). If the live link is unreachable by the time this is reviewed, it
+most likely means the hosting period has lapsed rather than the application
+having a defect — the complete, tested, and working system is fully preserved
+in this repository and in the demo video above, and can be re-deployed or
+re-verified locally in minutes via `docker compose up` (see "Running it
+locally" above). I'm glad to redeploy or extend hosting on request if a working
+live link is needed at review time — happy to be reached at [your email] for
+this.
 
 ---
 
@@ -211,4 +276,3 @@ real deployed domain rather than leaving them wide open, and set a real
   YARN/Kubernetes cluster is a config change, not a code change — `spark_engine.py`
   doesn't know or care how many physical machines are behind `SparkSession`.
 - The ReDoS guard is a heuristic safety net, not a formal proof — see above.
- 
