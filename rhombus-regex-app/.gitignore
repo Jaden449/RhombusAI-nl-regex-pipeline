@@ -1,0 +1,24 @@
+# env
+.env
+
+# python
+venv/
+__pycache__/
+*.pyc
+*.sqlite3
+
+# django runtime data
+backend/media/
+backend/results/
+backend/config/test_settings.py
+
+# node
+frontend/node_modules/
+frontend/dist/
+
+# os
+.DS_Store
+
+# spark
+metastore_db/
+derby.log
