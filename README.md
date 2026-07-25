@@ -5,7 +5,7 @@ and this app finds and replaces it across every row — asynchronously, and scal
 millions of rows via PySpark.
 
 **Demo video:** (https://youtu.be/pkUTT8xybaQ)
-**Live URL:** _[add your deployed URL here before submitting]_
+**Live URL:** (https://frontend-production-4d42.up.railway.app)
 
 ---
 
